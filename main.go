@@ -11,7 +11,9 @@ import (
 )
 
 func main(){
-	c := collector.PianBa{}
+	c := collector.PianBa{
+		Request: hleper.NewRequest(),
+	}
 	c.Run("")
 }
 
