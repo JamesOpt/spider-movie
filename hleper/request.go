@@ -1,7 +1,6 @@
 package hleper
 
 import (
-	"bufio"
 	"encoding/json"
 	"errors"
 	"io"
