@@ -5,9 +5,11 @@ import (
 	"fmt"
 	"github.com/PuerkitoBio/goquery"
 	"github.com/gocolly/colly"
+	"net/url"
 	"os"
 	"regexp"
 	"spider-movie/hleper"
+	"strings"
 )
 
 var DOMAIN = "https://www.pianba.tv"
@@ -17,7 +19,7 @@ type PianBa struct {
 	
 }
 
-func (p *PianBa) Run(path string)  {
+func (p *PianBa) Run(u string)  {
 	c := colly.NewCollector()
 
 	c.OnResponse(func(response *colly.Response) {
@@ -41,7 +43,7 @@ func (p *PianBa) Run(path string)  {
 
 		if element.Index == 0{
 			for _, link := range element.ChildAttrs("a", "href") {
-				fmt.Println(DOMAIN + link)
+				//fmt.Println(DOMAIN + link)
 				p.Request.Url = hleper.Url{
 					Host:  DOMAIN,
 					Path:  link,
@@ -49,13 +51,29 @@ func (p *PianBa) Run(path string)  {
 				response := p.Request.Get()
 
 				m3u8FileLink := regexp.MustCompile(`http.*?\.m3u8`).FindString(response)
-				fmt.Println(m3u8FileLink)
-				os.Exit(1)
+				m3u8FileLink = strings.Replace(m3u8FileLink, "\\", "", -1)
+				uu, _ := url.Parse(m3u8FileLink)
+
+				p.Request.SetUrl(uu.Scheme + "://" + uu.Host, uu.Path, nil)
+
+				realLink := p.Request.Get()
+				realLink = regexp.MustCompile(`.+\.m3u8`).FindString(realLink)
+				hosts := regexp.MustCompile(`http://|https://[^/]+`).FindString(m3u8FileLink)
+				realLink = hosts + realLink
+				uu, _ = url.Parse(realLink)
+
+				p.Request.SetUrl(uu.Scheme + "://" + uu.Host, uu.Path, nil)
+
+				//pp,_ := os.Getwd()
+				m := M3u8{}
+				m.DownloadRaw(realLink)
+				//p.Request.Download("test.m3u8", filepath.Join(pp, ".."))
+os.Exit(1)
 			}
 		}
 
 
 	})
 
-	c.Visit("https://www.pianba.tv/html/194890.html")
+	c.Visit(u)
 }

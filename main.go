@@ -14,7 +14,7 @@ func main(){
 	c := collector.PianBa{
 		Request: hleper.NewRequest(),
 	}
-	c.Run("")
+	c.Run("https://www.pianba.tv/html/194890.html")
 }
 
 func requestTest()  {

@@ -1,12 +1,16 @@
 package hleper
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"net/http"
 	netUrl "net/url"
+	"os"
+	"path/filepath"
 	"strings"
 )
 
@@ -108,4 +112,49 @@ func (req *Request) Post(params map[string]interface{}) string {
 		panic(err)
 	}
 	return string(dom)
+}
+
+func Download(uri string, filename string, basePath interface{}) error {
+	fmt.Println(uri)
+	req := NewRequest()
+	u, err := netUrl.Parse(uri)
+	if err != nil {
+		return err
+	}
+	// 设置参数
+	req.SetUrl(u.Scheme + "://" + u.Host, u.Path, u.Query())
+
+	if basePath == nil {
+		basePath, _ = os.Getwd()
+	}
+
+	basePath = filepath.Join(basePath.(string), "..", "data")
+
+	os.MkdirAll(basePath.(string), 0644)
+
+	file , err:= os.OpenFile(filepath.Join(basePath.(string), filename), os.O_CREATE|os.O_WRONLY, 0644)
+
+	if err != nil {
+		return err
+	}
+
+	response := req.Get() // 请求m3u8地址
+
+	reader := bytes.NewReader([]byte(response))
+	n, err := reader.WriteTo(file)
+	defer file.Close()
+	if err != nil{
+		panic(err)
+	}
+
+	fmt.Println(n)
+	return nil
+}
+
+func (req *Request) SetUrl(host, path string, query netUrl.Values)  {
+	req.Url = Url{
+		Host:  host,
+		Path:  path,
+		Query: query,
+	}
 }
