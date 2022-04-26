@@ -6,22 +6,22 @@ import (
 	"net/url"
 	"os"
 	"spider-movie/collector"
-	"spider-movie/hleper"
+	"spider-movie/helper"
 	"strings"
 )
 
 func main(){
 	c := collector.PianBa{
-		Request: hleper.NewRequest(),
+		Request: helper.NewRequest(),
 	}
 	c.Run("https://www.pianba.tv/html/194890.html")
 }
 
 func requestTest()  {
-	request := hleper.NewRequest()
+	request := helper.NewRequest()
 	request.Header.Add("Authorization", "bearereyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJodHRwOlwvXC9kZXZ0My5vZmZpY2VtYXRlLmNuXC9iYWNrZW5kXC9zaW5nbGVBdXRoIiwiaWF0IjoxNjUwMzQ5Mzg3LCJleHAiOjE3MjIzNDkzODcsIm5iZiI6MTY1MDM0OTM4NywianRpIjoiVGtOZk1rVjlDdDlvTkNGdCIsInN1YiI6MSwicHJ2IjoiODdlMGFmMWVmOWZkMTU4MTJmZGVjOTcxNTNhMTRlMGIwNDc1NDZhYSJ9.pZxxge_mhBRHSBeTsmZ-hrBoxEq0GKuwLnWrvjdsI9M")
-	request.Header.Set("Content-Type", hleper.APPLICATION_JOSN)
-	request.Url = hleper.Url{
+	request.Header.Set("Content-Type", helper.APPLICATION_JOSN)
+	request.Url = helper.Url{
 		Host: "http://devt3.officemate.cn",
 		Path: "backend/admin/getS4CustomerList?company_code=1000&name=东北大学",
 		Query: url.Values{

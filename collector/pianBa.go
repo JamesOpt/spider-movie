@@ -2,25 +2,29 @@ package collector
 
 import (
 	"bytes"
-	"fmt"
 	"github.com/PuerkitoBio/goquery"
 	"github.com/gocolly/colly"
 	"net/url"
-	"os"
 	"regexp"
-	"spider-movie/hleper"
+	"spider-movie/db"
+	"spider-movie/helper"
+	"spider-movie/model"
 	"strings"
 )
 
 var DOMAIN = "https://www.pianba.tv"
 
 type PianBa struct {
-	Request *hleper.Request
-	
+	Request *helper.Request
+	movie model.Movie
 }
 
 func (p *PianBa) Run(u string)  {
 	c := colly.NewCollector()
+
+	c.OnRequest(func(request *colly.Request) {
+		p.movie.SpiderLink = request.URL.String()
+	})
 
 	c.OnResponse(func(response *colly.Response) {
 		reader := bytes.NewReader(response.Body)
@@ -30,49 +34,40 @@ func (p *PianBa) Run(u string)  {
 		}
 
 		// 获取类型
-		fmt.Println(dom.Find("ul.stui-header__menu .active").Text())
+		if "电影" == dom.Find("ul.stui-header__menu .active").Text() {
+			p.movie.Type = 1
+		}
 	})
 	
 	c.OnHTML("div.stui-content", func(e *colly.HTMLElement) {
-		//fmt.Printf(e.ChildAttr(".stui-content__thumb img", "data-original"))
-		//fmt.Printf(e.ChildText(".stui-content__detail h1:first-child"))
-		//fmt.Printf(e.ChildText(".stui-content__detail h1:first-child"))
+		p.movie.Cover = e.ChildAttr(".stui-content__thumb img", "data-original")
+		p.movie.Title = e.ChildText(".stui-content__detail h1:first-child")
+		db.Engine.Driver().Where("title = ?", p.movie.Title).FirstOrCreate(&p.movie)
 	})
 
 	c.OnHTML(".stui-content__playlist", func(element *colly.HTMLElement) {
 
 		if element.Index == 0{
 			for _, link := range element.ChildAttrs("a", "href") {
-				//fmt.Println(DOMAIN + link)
-				p.Request.Url = hleper.Url{
-					Host:  DOMAIN,
-					Path:  link,
-				}
+
+				p.Request.SetUrl(DOMAIN, link, nil)
 				response := p.Request.Get()
 
 				m3u8FileLink := regexp.MustCompile(`http.*?\.m3u8`).FindString(response)
 				m3u8FileLink = strings.Replace(m3u8FileLink, "\\", "", -1)
 				uu, _ := url.Parse(m3u8FileLink)
 
-				p.Request.SetUrl(uu.Scheme + "://" + uu.Host, uu.Path, nil)
+				p.Request.SetUrl(uu.Scheme + "://" + uu.Host, uu.Path, uu.Query())
 
 				realLink := p.Request.Get()
 				realLink = regexp.MustCompile(`.+\.m3u8`).FindString(realLink)
 				hosts := regexp.MustCompile(`http://|https://[^/]+`).FindString(m3u8FileLink)
 				realLink = hosts + realLink
-				uu, _ = url.Parse(realLink)
 
-				p.Request.SetUrl(uu.Scheme + "://" + uu.Host, uu.Path, nil)
-
-				//pp,_ := os.Getwd()
-				m := M3u8{}
-				m.DownloadRaw(realLink)
-				//p.Request.Download("test.m3u8", filepath.Join(pp, ".."))
-os.Exit(1)
+				//m := M3u8{}
+				//m.DownloadRaw(realLink)
 			}
 		}
-
-
 	})
 
 	c.Visit(u)

@@ -5,9 +5,8 @@ import (
 	"github.com/grafov/m3u8"
 	"io/ioutil"
 	"net/http"
-	"os"
 	"regexp"
-	"spider-movie/hleper"
+	"spider-movie/helper"
 	"strings"
 	"sync"
 )
@@ -52,8 +51,6 @@ func (m *M3u8) DownloadRaw(url string)  {
 
 	switch listType {
 	case m3u8.MEDIA:
-
-
 		mediapl := p.(*m3u8.MediaPlaylist)
 		segments := getRealMediaPlaylist(mediapl.Segments)
 		wg := &sync.WaitGroup{}
@@ -62,13 +59,13 @@ func (m *M3u8) DownloadRaw(url string)  {
 			go func(segment *m3u8.MediaSegment) {
 				fmt.Println(segment.URI)
 				matchUrl := regexp.MustCompile(`[^\/.*]+\.ts`).FindString(segment.URI)
-				hleper.Download(v.URI, matchUrl, nil)
+				helper.Download(v.URI, matchUrl, nil)
 				wg.Done()
 			}(v)
 		}
 
 		wg.Wait()
-	os.Exit(1)
+
 	case m3u8.MASTER:
 		masterpl := p.(*m3u8.MasterPlaylist)
 		fmt.Printf("1111 %+v\n", masterpl.String())
