@@ -19,7 +19,7 @@ var Engine = new(MySql)
 func init()  {
 
 	dsn := fmt.Sprintf(
-		"%s:%s@tcp(%s:%s)/movie?charset=utf8&parseTime=True&loc=Local",
+		"%s:%s@tcp(%s:%s)/test?charset=utf8&parseTime=True&loc=Local",
 		"root",
 		"123456",
 		"127.0.0.1",

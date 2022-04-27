@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -115,46 +114,44 @@ func (req *Request) Post(params map[string]interface{}) string {
 }
 
 func Download(uri string, filename string, basePath interface{}) error {
-	fmt.Println(uri)
-	req := NewRequest()
 	u, err := netUrl.Parse(uri)
 	if err != nil {
 		return err
 	}
-	// 设置参数
-	req.SetUrl(u.Scheme + "://" + u.Host, u.Path, u.Query())
 
-	if basePath == nil {
-		basePath, _ = os.Getwd()
-	}
+	rootPath, _ := os.Getwd()
 
-	basePath = filepath.Join(basePath.(string), "..", "data")
+	absPath := filepath.Join(rootPath, "video", basePath.(string))
 
-	os.MkdirAll(basePath.(string), 0644)
+	os.MkdirAll(absPath, 0644)
 
-	file , err:= os.OpenFile(filepath.Join(basePath.(string), filename), os.O_CREATE|os.O_WRONLY, 0644)
+	file , err:= os.OpenFile(filepath.Join(absPath, filename), os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0644)
+	defer file.Close()
 
 	if err != nil {
 		return err
 	}
-
-	response := req.Get() // 请求m3u8地址
+	// 设置参数
+	response := NewRequest().
+		SetUrl(u.Scheme + "://" + u.Host, u.Path, u.Query()).
+		Get()
 
 	reader := bytes.NewReader([]byte(response))
-	n, err := reader.WriteTo(file)
-	defer file.Close()
+	_, err = reader.WriteTo(file)
+
 	if err != nil{
 		panic(err)
 	}
 
-	fmt.Println(n)
 	return nil
 }
 
-func (req *Request) SetUrl(host, path string, query netUrl.Values)  {
+func (req *Request) SetUrl(host, path string, query netUrl.Values) *Request {
 	req.Url = Url{
 		Host:  host,
 		Path:  path,
 		Query: query,
 	}
+
+	return req
 }

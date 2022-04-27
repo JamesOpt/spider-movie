@@ -2,6 +2,7 @@ package collector
 
 import (
 	"bytes"
+	"fmt"
 	"github.com/PuerkitoBio/goquery"
 	"github.com/gocolly/colly"
 	"net/url"
@@ -37,18 +38,21 @@ func (p *PianBa) Run(u string)  {
 		if "电影" == dom.Find("ul.stui-header__menu .active").Text() {
 			p.movie.Type = 1
 		}
-	})
-	
-	c.OnHTML("div.stui-content", func(e *colly.HTMLElement) {
-		p.movie.Cover = e.ChildAttr(".stui-content__thumb img", "data-original")
-		p.movie.Title = e.ChildText(".stui-content__detail h1:first-child")
+
+		p.movie.Cover, _ = dom.Find(".stui-content__thumb img").Attr("data-original")
+		p.movie.Title = dom.Find(".stui-content__detail .title").Text()
 		db.Engine.Driver().Where("title = ?", p.movie.Title).FirstOrCreate(&p.movie)
 	})
+	
+	//c.OnHTML("div.stui-content", func(e *colly.HTMLElement) {
+	//	p.movie.Cover = e.ChildAttr(".stui-content__thumb img", "data-original")
+	//	p.movie.Title = e.ChildText(".stui-content__detail h1:first-child")
+	//})
 
 	c.OnHTML(".stui-content__playlist", func(element *colly.HTMLElement) {
-
+		// 只搜索第一个dom
 		if element.Index == 0{
-			for _, link := range element.ChildAttrs("a", "href") {
+			for serial, link := range element.ChildAttrs("a", "href") {
 
 				p.Request.SetUrl(DOMAIN, link, nil)
 				response := p.Request.Get()
@@ -64,8 +68,14 @@ func (p *PianBa) Run(u string)  {
 				hosts := regexp.MustCompile(`http://|https://[^/]+`).FindString(m3u8FileLink)
 				realLink = hosts + realLink
 
-				//m := M3u8{}
-				//m.DownloadRaw(realLink)
+				serialModel := &model.Series{}
+				db.Engine.Driver().FirstOrCreate(serialModel, model.Series{
+					MovieId: p.movie.ID,
+					Serial: serial + 1,
+				})
+
+				fmt.Printf("第%v集, %v\n", serial + 1, realLink)
+				DownloadRaw(realLink, p.movie.Title, serialModel)
 			}
 		}
 	})

@@ -11,10 +11,19 @@ import (
 )
 
 func main(){
+
+	bar := helper.NewProgress(0, 100, "asdsad")
+
+	for i := 0; i < 100 ; i++ {
+		bar.Play(int64(i + 1))
+		//time.Sleep(time.Second)
+	}
+
+	os.Exit(1)
 	c := collector.PianBa{
 		Request: helper.NewRequest(),
 	}
-	c.Run("https://www.pianba.tv/html/194890.html")
+	c.Run("https://www.pianba.tv/html/204591.html")
 }
 
 func requestTest()  {

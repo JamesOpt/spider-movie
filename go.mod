@@ -6,6 +6,8 @@ require (
 	github.com/PuerkitoBio/goquery v1.8.0
 	github.com/gocolly/colly v1.2.0
 	github.com/grafov/m3u8 v0.11.1
+	gorm.io/driver/mysql v1.3.3
+	gorm.io/gorm v1.23.5
 )
 
 require (
@@ -27,6 +29,4 @@ require (
 	golang.org/x/text v0.3.7 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
 	google.golang.org/protobuf v1.28.0 // indirect
-	gorm.io/driver/mysql v1.3.3 // indirect
-	gorm.io/gorm v1.23.5 // indirect
 )

@@ -5,17 +5,19 @@ import (
 	"github.com/grafov/m3u8"
 	"io/ioutil"
 	"net/http"
+	"path/filepath"
 	"regexp"
+	"spider-movie/db"
 	"spider-movie/helper"
+	"spider-movie/model"
+	"strconv"
 	"strings"
 	"sync"
 )
 
-
-type M3u8 struct {
-
-}
-
+/**
+将MediaSegment内nil去除
+ */
 func getRealMediaPlaylist(arr []*m3u8.MediaSegment) []*m3u8.MediaSegment {
 	var data []*m3u8.MediaSegment
 
@@ -30,8 +32,9 @@ func getRealMediaPlaylist(arr []*m3u8.MediaSegment) []*m3u8.MediaSegment {
 	return data
 }
 
-func (m *M3u8) DownloadRaw(url string)  {
+func DownloadRaw(url, basePath string, serial *model.Series)  {
 	fmt.Println(url)
+	serial.SpiderLink = url
 
 	client := http.Client{}
 	response, err := client.Get(url)
@@ -57,13 +60,12 @@ func (m *M3u8) DownloadRaw(url string)  {
 		for _, v := range segments {
 			wg.Add(1)
 			go func(segment *m3u8.MediaSegment) {
-				fmt.Println(segment.URI)
 				matchUrl := regexp.MustCompile(`[^\/.*]+\.ts`).FindString(segment.URI)
-				helper.Download(v.URI, matchUrl, nil)
+				helper.Download(v.URI, matchUrl, filepath.Join(basePath, strconv.Itoa(serial.Serial)))
 				wg.Done()
 			}(v)
 		}
-
+		db.Engine.Driver().Save(serial)
 		wg.Wait()
 
 	case m3u8.MASTER:
