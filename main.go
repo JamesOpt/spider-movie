@@ -1,18 +1,97 @@
 package main
 
 import (
+	"encoding/base32"
+	"encoding/hex"
 	"fmt"
 	"github.com/gocolly/colly"
-	"spider-movie/collector"
-	"spider-movie/helper"
+	"net/url"
+	"os"
 	"strings"
 )
 
-func main(){
-	c := collector.PianBa{
-		Request: helper.NewRequest(),
+type Hash []byte
+
+type Magnet struct {
+	InfoHash Hash
+	Trackers []string
+	DisplayName string
+}
+
+const xtPrefix  = "urn:btih:"
+
+func (m Magnet) String() string {
+	ret := "magnet:?xt="
+	ret += xtPrefix + hex.EncodeToString(m.InfoHash[:])
+	if m.DisplayName != "" {
+		ret += "&dn=" + url.QueryEscape(m.DisplayName)
 	}
-	c.Run("https://www.pianba.tv/html/209094.html")
+	for _, tr := range m.Trackers {
+		ret += "&tr=" + url.QueryEscape(tr)
+	}
+	return ret
+}
+
+func ParseMagnetURI(uri string) (m Magnet, err error) {
+	u, err := url.Parse(uri)
+	if err != nil {
+		err = fmt.Errorf("error parsing uri : %s", err)
+		return
+	}
+	if u.Scheme != "magnet" {
+		err = fmt.Errorf("unexpected scheme: %q", u.Scheme)
+		return
+	}
+	xt := u.Query().Get("xt")
+	if !strings.HasPrefix(xt, xtPrefix) {
+		err = fmt.Errorf("bad xt parameter")
+		return
+	}
+
+
+	infoHash := xt[len(xtPrefix):]
+
+
+	var decode func(dst, src []byte) (int, error)
+	switch len(infoHash) {
+	case 40:
+		decode = hex.Decode
+	case 32:
+		decode = base32.StdEncoding.Decode
+	}
+
+	if decode == nil {
+		err = fmt.Errorf("unhandled xt parameter encoding: encoded lenght", len(infoHash))
+		return
+	}
+
+	m.InfoHash = make([]byte, len(infoHash))
+	n, err := decode(m.InfoHash[:], []byte(infoHash))
+	if err != nil {
+		err = fmt.Errorf("error decoding xt: %s", err)
+		return
+	}
+	fmt.Println(n)
+	os.Exit(1)
+
+	if n != 20 {
+		panic(n)
+	}
+	m.DisplayName = u.Query().Get("dn")
+	m.Trackers = u.Query()["tr"]
+	return
+}
+
+func main(){
+	magn := "magnet:?xt=urn:btih:1a84227232a032c872a5e4e1432d72d167c57544&dn=[%E7%94%B5%E5%BD%B1%E5%A4%A9%E5%A0%82www.dytt89.com]%E6%96%B0%E8%9D%99%E8%9D%A0%E4%BE%A0-2022_HD%E4%B8%AD%E8%8B%B1%E5%8F%8C%E5%AD%97.mp4"
+
+	mag, _ := ParseMagnetURI(magn)
+	fmt.Println(mag.DisplayName, mag.Trackers, string(mag.InfoHash))
+
+	//c := collector.PianBa{
+	//	Request: helper.NewRequest(),
+	//}
+	//c.Run("https://www.pianba.tv/html/209094.html")
 }
 
 //func requestTest()  {
