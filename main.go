@@ -83,6 +83,8 @@ func ParseMagnetURI(uri string) (m Magnet, err error) {
 }
 
 func main(){
+// https://0ranga.com/2018/08/26/bt-metadata/
+
 	magn := "magnet:?xt=urn:btih:1a84227232a032c872a5e4e1432d72d167c57544&dn=[%E7%94%B5%E5%BD%B1%E5%A4%A9%E5%A0%82www.dytt89.com]%E6%96%B0%E8%9D%99%E8%9D%A0%E4%BE%A0-2022_HD%E4%B8%AD%E8%8B%B1%E5%8F%8C%E5%AD%97.mp4"
 
 	mag, _ := ParseMagnetURI(magn)
