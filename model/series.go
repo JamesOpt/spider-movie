@@ -8,4 +8,5 @@ type Series struct {
 	LocalLink  string
 	SpiderLink string
 	OtherLink  string
+	SpiderM3u8 []SpiderM3u8 `gorm:foreignKey:series_id`
 }

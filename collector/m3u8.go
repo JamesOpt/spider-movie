@@ -33,7 +33,6 @@ func getRealMediaPlaylist(arr []*m3u8.MediaSegment) []*m3u8.MediaSegment {
 }
 
 func DownloadRaw(url, basePath string, serial *model.Series)  {
-	fmt.Println(url)
 	serial.SpiderLink = url
 
 	client := http.Client{}
@@ -52,18 +51,52 @@ func DownloadRaw(url, basePath string, serial *model.Series)  {
 		panic(err)
 	}
 
+	var downNum int64 = 0
+
 	switch listType {
 	case m3u8.MEDIA:
 		mediapl := p.(*m3u8.MediaPlaylist)
 		segments := getRealMediaPlaylist(mediapl.Segments)
 		wg := &sync.WaitGroup{}
+		bar := helper.NewProgress(0, int64(len(segments)), basePath + "【" + strconv.Itoa(serial.Serial) + "】")
+
+		maxNum := 50
+		ch := make(chan int, maxNum)
+
 		for _, v := range segments {
 			wg.Add(1)
-			go func(segment *m3u8.MediaSegment) {
+			ch <- 1
+			go func(segment *m3u8.MediaSegment, ch chan int) {
 				matchUrl := regexp.MustCompile(`[^\/.*]+\.ts`).FindString(segment.URI)
-				helper.Download(v.URI, matchUrl, filepath.Join(basePath, strconv.Itoa(serial.Serial)))
+				spiderm3u8 := model.SpiderM3u8{
+					SeriesId: serial.ID,
+					Filename: matchUrl,
+				}
+				db.Engine.Driver().FirstOrCreate(&spiderm3u8, spiderm3u8)
+
+				if spiderm3u8.Status == 1 {
+					downNum += 1
+					bar.Play(downNum)
+					<-ch
+					wg.Done()
+					return
+				}
+
+				spiderm3u8.Link = segment.URI
+				spiderm3u8.Status = 1
+
+				err := helper.Download(segment.URI, matchUrl, filepath.Join(basePath, strconv.Itoa(serial.Serial)))
+				if err != nil {
+					panic(err)
+				}
+				downNum += 1
+				bar.Play(downNum)
+
+				db.Engine.Driver().Save(spiderm3u8)
+
+				<-ch
 				wg.Done()
-			}(v)
+			}(v, ch)
 		}
 		db.Engine.Driver().Save(serial)
 		wg.Wait()

@@ -2,10 +2,8 @@ package collector
 
 import (
 	"bytes"
-	"fmt"
 	"github.com/PuerkitoBio/goquery"
 	"github.com/gocolly/colly"
-	"net/url"
 	"regexp"
 	"spider-movie/db"
 	"spider-movie/helper"
@@ -53,17 +51,12 @@ func (p *PianBa) Run(u string)  {
 		// 只搜索第一个dom
 		if element.Index == 0{
 			for serial, link := range element.ChildAttrs("a", "href") {
-
-				p.Request.SetUrl(DOMAIN, link, nil)
-				response := p.Request.Get()
+				response := p.Request.Get(DOMAIN + link)
 
 				m3u8FileLink := regexp.MustCompile(`http.*?\.m3u8`).FindString(response)
 				m3u8FileLink = strings.Replace(m3u8FileLink, "\\", "", -1)
-				uu, _ := url.Parse(m3u8FileLink)
 
-				p.Request.SetUrl(uu.Scheme + "://" + uu.Host, uu.Path, uu.Query())
-
-				realLink := p.Request.Get()
+				realLink := p.Request.Get(m3u8FileLink)
 				realLink = regexp.MustCompile(`.+\.m3u8`).FindString(realLink)
 				hosts := regexp.MustCompile(`http://|https://[^/]+`).FindString(m3u8FileLink)
 				realLink = hosts + realLink
@@ -74,7 +67,6 @@ func (p *PianBa) Run(u string)  {
 					Serial: serial + 1,
 				})
 
-				fmt.Printf("第%v集, %v\n", serial + 1, realLink)
 				DownloadRaw(realLink, p.movie.Title, serialModel)
 			}
 		}
