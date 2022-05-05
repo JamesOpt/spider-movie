@@ -6,7 +6,6 @@ import (
 	"io/ioutil"
 	"net/http"
 	"path/filepath"
-	"regexp"
 	"spider-movie/db"
 	"spider-movie/helper"
 	"spider-movie/model"
@@ -60,14 +59,20 @@ func DownloadRaw(url, basePath string, serial *model.Series)  {
 		wg := &sync.WaitGroup{}
 		bar := helper.NewProgress(0, int64(len(segments)), basePath + "【" + strconv.Itoa(serial.Serial) + "】")
 
-		maxNum := 50
+		maxNum := 50 // 控制好携程的数量
 		ch := make(chan int, maxNum)
 
 		for _, v := range segments {
 			wg.Add(1)
 			ch <- 1
 			go func(segment *m3u8.MediaSegment, ch chan int) {
-				matchUrl := regexp.MustCompile(`[^\/.*]+\.ts`).FindString(segment.URI)
+				fmt.Println(segment.URI)
+				// matchUrl2 := regexp.MustCompile(`[^\/.*]+(\.ts)?`).FindStringSubmatch(segment.URI)
+				matchUrl2 := strings.Split(segment.URI, "/")
+				fmt.Println(matchUrl2)
+				matchUrl := matchUrl2[len(matchUrl2) -1]
+				//fmt.Println(matchUrl)
+				//os.Exit(1)
 				spiderm3u8 := model.SpiderM3u8{
 					SeriesId: serial.ID,
 					Filename: matchUrl,

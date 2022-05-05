@@ -5,8 +5,11 @@ import (
 	"encoding/hex"
 	"fmt"
 	"github.com/gocolly/colly"
+	"io/ioutil"
 	"net/url"
 	"os"
+	"spider-movie/collector"
+	"spider-movie/helper"
 	"strings"
 )
 
@@ -83,17 +86,43 @@ func ParseMagnetURI(uri string) (m Magnet, err error) {
 }
 
 func main(){
+	file, _ := os.OpenFile("1", os.O_WRONLY, 0644)
+
+	defer file.Close()
+	data, _ := ioutil.ReadAll(file)
+
+	file.Seek(0, 0)
+	file.Write([]byte{255, 255, 255,255})
+
+	for i := 0; i < 10; i++ {
+		if i % 2 == 0 {
+			fmt.Println()
+		}
+		fmt.Printf("%s", hex.EncodeToString([]byte{data[i]}))
+	}
+
+
+	os.Exit(1)
+	//bytes.NewReader()
+
+
 // https://0ranga.com/2018/08/26/bt-metadata/
 
-	magn := "magnet:?xt=urn:btih:1a84227232a032c872a5e4e1432d72d167c57544&dn=[%E7%94%B5%E5%BD%B1%E5%A4%A9%E5%A0%82www.dytt89.com]%E6%96%B0%E8%9D%99%E8%9D%A0%E4%BE%A0-2022_HD%E4%B8%AD%E8%8B%B1%E5%8F%8C%E5%AD%97.mp4"
-
-	mag, _ := ParseMagnetURI(magn)
-	fmt.Println(mag.DisplayName, mag.Trackers, string(mag.InfoHash))
+	//magn := "magnet:?xt=urn:btih:1a84227232a032c872a5e4e1432d72d167c57544&dn=[%E7%94%B5%E5%BD%B1%E5%A4%A9%E5%A0%82www.dytt89.com]%E6%96%B0%E8%9D%99%E8%9D%A0%E4%BE%A0-2022_HD%E4%B8%AD%E8%8B%B1%E5%8F%8C%E5%AD%97.mp4"
+	//
+	//mag, _ := ParseMagnetURI(magn)
+	//fmt.Println(mag.DisplayName, mag.Trackers, string(mag.InfoHash))
 
 	//c := collector.PianBa{
 	//	Request: helper.NewRequest(),
 	//}
 	//c.Run("https://www.pianba.tv/html/209094.html")
+
+	c := collector.Hktv{
+		Request: helper.NewRequest(),
+	}
+
+	c.Run("https://www.hktv03.com/vod/detail/id/182142.html")
 }
 
 //func requestTest()  {
