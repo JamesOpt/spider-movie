@@ -1,0 +1,8 @@
+image_server:
+  vcd_path: vcd/
+  base_path: /data/cdn/
+database:
+  host: 127.0.0.1
+  username: root
+  password: 123456
+  port: 3306

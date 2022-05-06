@@ -38,12 +38,11 @@ func (hk *Hktv) Run(uri string)  {
 	})
 
 	c.OnHTML(".myui-content__list", func(element *colly.HTMLElement) {
-		if element.Index == 1 {
+		if element.Index == 0 {
 			for serial, link := range element.ChildAttrs(".btn-default", "href") {
 				response := hk.Request.Get(HKTV + link)
 
-
-				m3u8FileLink := regexp.MustCompile(`"url":"(.*?\.m3u8)"`).FindStringSubmatch(response)
+				m3u8FileLink := regexp.MustCompile(`"url":"(\w+\.m3u8)"`).FindStringSubmatch(response)
 
 				serialModel := &model.Series{}
 				db.Engine.Driver().FirstOrCreate(serialModel, model.Series{
@@ -51,9 +50,7 @@ func (hk *Hktv) Run(uri string)  {
 					Serial: serial + 1,
 				})
 
-				DownloadRaw(HKTV_SPIDER_PATH + m3u8FileLink[1], hk.Movie.Title, serialModel)
-
-
+				DownloadRaw(HKTV_SPIDER_PATH + m3u8FileLink[1], hk.Movie.Title, serialModel, hk)
 			}
 		}
 	})

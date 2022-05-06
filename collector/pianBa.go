@@ -67,7 +67,7 @@ func (p *PianBa) Run(u string)  {
 					Serial: serial + 1,
 				})
 
-				DownloadRaw(realLink, p.movie.Title, serialModel)
+				DownloadRaw(realLink, p.movie.Title, serialModel, p)
 			}
 		}
 	})

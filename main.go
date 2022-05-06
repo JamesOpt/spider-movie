@@ -5,7 +5,6 @@ import (
 	"encoding/hex"
 	"fmt"
 	"github.com/gocolly/colly"
-	"io/ioutil"
 	"net/url"
 	"os"
 	"spider-movie/collector"
@@ -86,23 +85,23 @@ func ParseMagnetURI(uri string) (m Magnet, err error) {
 }
 
 func main(){
-	file, _ := os.OpenFile("1", os.O_WRONLY, 0644)
-
-	defer file.Close()
-	data, _ := ioutil.ReadAll(file)
-
-	file.Seek(0, 0)
-	file.Write([]byte{255, 255, 255,255})
-
-	for i := 0; i < 10; i++ {
-		if i % 2 == 0 {
-			fmt.Println()
-		}
-		fmt.Printf("%s", hex.EncodeToString([]byte{data[i]}))
-	}
-
-
-	os.Exit(1)
+	//file, _ := os.OpenFile("1", os.O_RDWR, 0644)
+	//
+	//defer file.Close()
+	//data, _ := ioutil.ReadAll(file)
+	//
+	//file.Seek(0, 0)
+	//file.Write([]byte{255, 255, 255,255})
+	//
+	//for i := 0; i < 10; i++ {
+	//	if i % 2 == 0 {
+	//		fmt.Println()
+	//	}
+	//	fmt.Printf("%s", hex.EncodeToString([]byte{data[i]}))
+	//}
+	//
+	//
+	//os.Exit(1)
 	//bytes.NewReader()
 
 

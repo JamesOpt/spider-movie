@@ -134,7 +134,7 @@ func Download(uri string, filename string, basePath interface{}) error {
 
 	os.MkdirAll(absPath, 0644)
 
-	file , err:= os.OpenFile(filepath.Join(absPath, filename), os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0644)
+	file , err:= os.OpenFile(filepath.Join(absPath, filename), os.O_CREATE|os.O_RDWR|os.O_TRUNC, 0644)
 	defer file.Close()
 
 	if err != nil {
