@@ -8,11 +8,16 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"math/rand"
 	"net/http"
 	netUrl "net/url"
 	"os"
 	"path/filepath"
+	"runtime"
+	"spider-movie/app"
 	"strings"
+	"time"
+	"unicode/utf8"
 )
 
 var (
@@ -122,17 +127,38 @@ func (req *Request) Post(api string, params map[string]interface{}) string {
 	return string(dom)
 }
 
-func Download(uri string, filename string, basePath interface{}) error {
+func Download(uri string, filename string, basePath interface{}, m3u8Filename string) error {
 	//u, err := netUrl.Parse(uri)
 	//if err != nil {
 	//	return err
 	//}
 
-	rootPath, _ := os.Getwd()
 
-	absPath := filepath.Join(rootPath, "video", basePath.(string))
+	//originFilename := filename
+
+	serialPath := app.GetRootPath("video")
+	absPath := filepath.Join(serialPath, basePath.(string))
 
 	os.MkdirAll(absPath, 0644)
+
+	// 如果文件名字超过255，则换名
+	if utf8.RuneCountInString(filename) > 255 {
+		fmt.Println(filename)
+		filename = randStrings(12)
+		fmt.Println(filename)
+
+		//m3File, _ := os.OpenFile(m3u8Filename, os.O_RDWR|os.O_EXCL, 0644)
+		//
+		//defer m3File.Close()
+		//m3Data, _ := io.ReadAll(m3File)
+		//
+		//newM3Data := regexp.MustCompile(originFilename).ReplaceAllFunc(m3Data, func(i []byte) []byte {
+		//	fmt.Println(filename)
+		//	return []byte(tfilename)
+		//})
+		//
+		//m3File.Write(newM3Data)
+	}
 
 	file , err:= os.OpenFile(filepath.Join(absPath, filename), os.O_CREATE|os.O_RDWR|os.O_TRUNC, 0644)
 	defer file.Close()
@@ -163,3 +189,38 @@ func Download(uri string, filename string, basePath interface{}) error {
 //
 //	return req
 //}
+
+/**
+随机生成字符串
+ */
+func randStrings(length  int) string {
+	charset := "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+
+	id := curGoroutineId()
+
+	rand.Seed(time.Now().UnixNano())
+	result := make([]byte, length - len(id))
+	for i := range result {
+		result[i] = charset[rand.Intn(len(charset))]
+	}
+
+	return string(result) + id
+}
+
+/**
+获取当前协程id
+ */
+func curGoroutineId() string {
+	buf := make([]byte, 64)
+	runtime.Stack(buf, false)
+
+	b := bytes.TrimPrefix(buf, []byte("goroutine "))
+	index := bytes.IndexByte(b, ' ')
+	if index < 0 {
+		return "0"
+	} else {
+		b = b[:index]
+	}
+
+	return string(b)
+}

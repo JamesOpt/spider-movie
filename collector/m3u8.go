@@ -36,10 +36,14 @@ func getRealMediaPlaylist(arr []*m3u8.MediaSegment) []*m3u8.MediaSegment {
 	return data
 }
 
-func DownloadRaw(url, basePath string, serial *model.Series, self interface{})  {
+/**
+下载ts文件
+ */
+func DownloadRaw(url, serialPath string, serial *model.Series, self interface{})  {
 	serial.SpiderLink = url
 
 	client := http.Client{}
+	// response.Body 只能读一次，第二次读不到内容
 	response, err := client.Get(url)
 	if err != nil{
 		panic(err)
@@ -49,43 +53,44 @@ func DownloadRaw(url, basePath string, serial *model.Series, self interface{})  
 
 	data, _ := ioutil.ReadAll(response.Body)
 
-	reader := strings.NewReader(string(data))
-	p, listType, err := m3u8.DecodeFrom(reader, true)
+	p, listType, err := m3u8.DecodeFrom(strings.NewReader(string(data)), true)
 	if err != nil {
 		panic(err)
 	}
 
 	// 创建集目录
-	serialPath := filepath.Join(app.GetRootPath("video"), basePath, strconv.Itoa(serial.Serial))
-	os.MkdirAll(serialPath, 0644)
+	serialAbsPath := filepath.Join(app.GetRootPath("video"), serialPath, strconv.Itoa(serial.Serial))
+	os.MkdirAll(serialAbsPath, 0644)
 
+	// 下载m3u8文件
 	m3u8Filenames := strings.Split(url, "/")
-	m3u8Filename := filepath.Join(serialPath, m3u8Filenames[len(m3u8Filenames) - 1])
-	file , _:= os.OpenFile(m3u8Filename, os.O_CREATE|os.O_RDWR|os.O_TRUNC, 0644)
+	m3u8Filename := filepath.Join(serialAbsPath, m3u8Filenames[len(m3u8Filenames) - 1])
 
+	file , _:= os.OpenFile(m3u8Filename, os.O_CREATE|os.O_RDWR|os.O_TRUNC, 0644)
 	defer file.Close()
 
 	bReader := bytes.NewReader([]byte(data))
 	_, err = bReader.WriteTo(file)
+	// end
 
 	var downNum int64 = 0
 
+	// 分析m3u8文件类型
 	switch listType {
 	case m3u8.MEDIA:
 		mediapl := p.(*m3u8.MediaPlaylist)
 		segments := getRealMediaPlaylist(mediapl.Segments)
 		wg := &sync.WaitGroup{}
-		bar := helper.NewProgress(0, int64(len(segments)), basePath + "【" + strconv.Itoa(serial.Serial) + "】")
+		bar := helper.NewProgress(0, int64(len(segments)), serialPath + "【" + strconv.Itoa(serial.Serial) + "】")
 
-		maxNum := 50 // 控制好携程的数量
+		maxNum := app.Config.GetInt("coroutine_num") // 控制好携程的数量, 一次性生成多个携程有问题
+
 		ch := make(chan int, maxNum)
 
 		for _, v := range segments {
 			wg.Add(1)
 			ch <- 1
 			go func(segment *m3u8.MediaSegment, ch chan int) {
-				//fmt.Println(segment.URI)
-
 				var matchUrl string
 				switch self.(type) {
 					case Hktv,*Hktv:
@@ -112,21 +117,21 @@ func DownloadRaw(url, basePath string, serial *model.Series, self interface{})  
 				spiderm3u8.Link = segment.URI
 				spiderm3u8.Status = 1
 
-				err := helper.Download(segment.URI, matchUrl, filepath.Join(basePath, strconv.Itoa(serial.Serial)))
+				err := helper.Download(segment.URI, matchUrl, filepath.Join(serialPath, strconv.Itoa(serial.Serial)), m3u8Filename)
 				if err != nil {
 					fmt.Println(err)
 					panic(err)
 				}
 				downNum += 1
-				bar.Play(downNum)
+				//bar.Play(downNum)
 
-				db.Engine.Driver().Save(spiderm3u8)
+				//db.Engine.Driver().Save(spiderm3u8)
 
 				<-ch
 				wg.Done()
 			}(v, ch)
 		}
-		db.Engine.Driver().Save(serial)
+		//db.Engine.Driver().Save(serial)
 		wg.Wait()
 
 	case m3u8.MASTER:

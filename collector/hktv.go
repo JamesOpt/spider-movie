@@ -50,7 +50,9 @@ func (hk *Hktv) Run(uri string)  {
 					Serial: serial + 1,
 				})
 
-				DownloadRaw(HKTV_SPIDER_PATH + m3u8FileLink[1], hk.Movie.Title, serialModel, hk)
+				if serial == 3 {
+					DownloadRaw(HKTV_SPIDER_PATH + m3u8FileLink[1], hk.Movie.Title, serialModel, hk)
+				}
 			}
 		}
 	})
