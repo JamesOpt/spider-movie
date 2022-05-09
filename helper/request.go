@@ -84,15 +84,33 @@ func (req *Request) Do(method string, api string, body io.Reader) io.ReadCloser 
 			Transport: &http.Transport{
 				TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 			},
+			CheckRedirect: func(req *http.Request, via []*http.Request) error {
+				if len(via) > 0 && via[0].Proto != "HTTP/2.0"{
+					c := http.Client{}
+					newReq, _ := http.NewRequest("HEAD", req.URL.String(), nil)
+					response, _ := c.Do(newReq)
+					defer response.Body.Close()
+
+					if response.Proto == "HTTP/2.0" {
+						return errors.New("HTTP/2.0 request cache error")
+					}
+				}
+
+				return nil
+			},
 		}
 	}
 
 	response, err := req.Client.Do(newReq)
 
 	if err != nil {
-		fmt.Println()
-		fmt.Println(err.Error())
-		panic(err)
+		if err.(*netUrl.Error).Err.Error() != errors.New("HTTP/2.0 request cache error").Error() {
+			panic(err)
+		}
+	}
+
+	if response.Header.Get("Location") != ""{
+		return NewRequest().Do(method, response.Header.Get("Location"), body)
 	}
 
 	return response.Body
