@@ -87,6 +87,7 @@ func DownloadRaw(url, serialPath string, serial *model.Series, self interface{})
 
 		ch := make(chan int, maxNum)
 
+		m := sync.Map{}
 		for _, v := range segments {
 			wg.Add(1)
 			ch <- 1
@@ -117,7 +118,7 @@ func DownloadRaw(url, serialPath string, serial *model.Series, self interface{})
 				spiderm3u8.Link = segment.URI
 				spiderm3u8.Status = 1
 
-				err := helper.Download(segment.URI, matchUrl, filepath.Join(serialPath, strconv.Itoa(serial.Serial)), m3u8Filename)
+				err := helper.Download(segment.URI, matchUrl, filepath.Join(serialPath, strconv.Itoa(serial.Serial)), &m)
 				if err != nil {
 					fmt.Println(err)
 					panic(err)
@@ -133,6 +134,20 @@ func DownloadRaw(url, serialPath string, serial *model.Series, self interface{})
 		}
 		//db.Engine.Driver().Save(serial)
 		wg.Wait()
+
+		// 将替换的m3u8内容写入文件内
+		m.Range(func(key, value any) bool {
+			data = regexp.MustCompile(key.(string)).ReplaceAllFunc(data, func(i []byte) []byte {
+				return []byte(value.(string))
+			})
+
+			return true
+		})
+
+		file.Seek(0, 0)
+		fmt.Println(string(data))
+		bReader := bytes.NewReader(data)
+		bReader.WriteTo(file)
 
 	case m3u8.MASTER:
 		masterpl := p.(*m3u8.MasterPlaylist)
