@@ -50,7 +50,6 @@ func DownloadRaw(url, serialPath string, serial *model.Series, self interface{})
 	}
 
 	defer response.Body.Close()
-
 	data, _ := ioutil.ReadAll(response.Body)
 
 	p, listType, err := m3u8.DecodeFrom(strings.NewReader(string(data)), true)
@@ -98,7 +97,7 @@ func DownloadRaw(url, serialPath string, serial *model.Series, self interface{})
 						matchUrl2 := strings.Split(segment.URI, "/")
 						matchUrl = matchUrl2[len(matchUrl2) -1]
 					default:
-						matchUrl = regexp.MustCompile(`[^\/.*]+(\.ts)?`).FindString(segment.URI)
+						matchUrl = regexp.MustCompile(`[^\/.*]+(\.ts)`).FindString(segment.URI)
 				}
 
 				spiderm3u8 := model.SpiderM3u8{
@@ -124,15 +123,15 @@ func DownloadRaw(url, serialPath string, serial *model.Series, self interface{})
 					panic(err)
 				}
 				downNum += 1
-				//bar.Play(downNum)
+				bar.Play(downNum)
 
-				//db.Engine.Driver().Save(spiderm3u8)
+				db.Engine.Driver().Save(spiderm3u8)
 
 				<-ch
 				wg.Done()
 			}(v, ch)
 		}
-		//db.Engine.Driver().Save(serial)
+		db.Engine.Driver().Save(serial)
 		wg.Wait()
 
 		// 将替换的m3u8内容写入文件内
@@ -145,7 +144,6 @@ func DownloadRaw(url, serialPath string, serial *model.Series, self interface{})
 		})
 
 		file.Seek(0, 0)
-		fmt.Println(string(data))
 		bReader := bytes.NewReader(data)
 		bReader.WriteTo(file)
 
